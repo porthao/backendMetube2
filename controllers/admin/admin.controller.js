@@ -415,9 +415,10 @@ exports.forgotPassword = async (req, res) => {
     if (!admin) {
       return res.status(200).json({ status: false, message: "Admin does not found with that email." });
     }
-
+console.log('object :>> ', process?.env?.PASSWORD);
     var transporter = nodemailer.createTransport({
       service: "gmail",
+      
       auth: {
         user: process?.env?.EMAIL,
         pass: process?.env?.PASSWORD,

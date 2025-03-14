@@ -14,8 +14,8 @@ const FileController = require("../../controllers/admin/file.controller");
 //upload content to digital ocean storage
 route.post(
   "/upload-file",
-  function (request, response, next) {
-    upload(request, response, function (error) {
+  function (req, res, next) {
+    upload(req, res, function (error) {
       if (error) {
         console.log("error in file ", error);
       } else {

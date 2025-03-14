@@ -24,6 +24,7 @@ exports.storeAdReward = async (req, res) => {
     adReward.adDisplayInterval = parseInt(req.body.adDisplayInterval);
     adReward.coinEarnedFromAd = parseInt(req.body.coinEarnedFromAd);
     await adReward.save();
+  
 
     return res.status(200).json({
       status: true,

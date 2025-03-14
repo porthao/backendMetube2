@@ -7,8 +7,9 @@ const Admin = require("../models/admin.model");
 module.exports = async (req, res, next) => {
  
   try {
-    const Authorization = req.get("Authorization").split(" ")[1];
-    console.log('object :>> ', Authorization);
+    // const Authorization = req.get("Authorization").split(" ")[1];
+    const Authorization = req.get("Authorization");
+
     if (!Authorization) {
       return res.status(403).json({ status: false, message: "Oops ! You are not authorized." });
     }

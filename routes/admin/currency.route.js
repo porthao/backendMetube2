@@ -5,7 +5,7 @@ const route = express.Router();
 const checkAccessWithSecretKey = require("../../checkAccess");
 
 //controller
-const currencyController = require("../../controllers/admin/currencyController");
+const currencyController = require("../../controllers/admin/currency.controller");
 
 route.post("/create", checkAccessWithSecretKey(), currencyController.store);
 route.patch("/update", checkAccessWithSecretKey(), currencyController.update);

@@ -4,6 +4,7 @@ const { deleteFromSpace } = require("../../util/deleteFromSpace");
 //uploadContent
 exports.uploadContent = async (req, res) => {
   try {
+    console.log('req.body :>> ', req.body);
     if (!req.body?.folderStructure || !req.body?.keyName) {
       return res.status(200).json({ status: false, message: "Oops ! Invalid details." });
     }
