@@ -4,12 +4,7 @@
 # MeTube Backend Setup
 
 ## 1. Download and Extract Files
-- Download the ZIP file.
-- Extract the ZIP file.
-- Navigate to:
-  ```
-  MeTube All File → MeTube All File → Source Code → admin → backend
-  ```
+
 - Open the `backend` folder in VS Code.
 
 ## 2. Install MongoDB (Choose One Option)
