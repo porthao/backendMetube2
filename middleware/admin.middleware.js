@@ -5,10 +5,16 @@ const jwt = require("jsonwebtoken");
 const Admin = require("../models/admin.model");
 
 module.exports = async (req, res, next) => {
- 
+
   try {
-    // const Authorization = req.get("Authorization").split(" ")[1];
-    const Authorization = req.get("Authorization");
+
+    let Authorization = req.get("Authorization");
+
+
+    if (Authorization && Authorization.includes("Bearer")) {
+      Authorization = Authorization.split(" ")[1];
+    }
+
 
     if (!Authorization) {
       return res.status(403).json({ status: false, message: "Oops ! You are not authorized." });
