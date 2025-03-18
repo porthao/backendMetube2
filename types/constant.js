@@ -94,3 +94,15 @@ exports.VIDEO_PRIVACY_TYPE = {
   PUBLIC: 1,
   PRIVATE: 2,
 };
+
+
+exports.STATUS_TYPE = {
+  IsActive: "IsActive",
+  NotActive: "NotActive",
+};
+
+exports.GENDER_TYPE = {
+  Male: "Male",
+  Female: "Female",
+  Transgender: "Transgender",
+};

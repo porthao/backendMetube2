@@ -58,7 +58,9 @@ exports.fakeUser = async (req, res) => {
       !req.body.websiteLink ||
       !req.body.password
     ) {
-      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
     }
 
     const user = new User();
@@ -75,7 +77,9 @@ exports.fakeUser = async (req, res) => {
     user.password = cryptr.encrypt(req?.body?.password);
     user.isAddByAdmin = true;
     user.uniqueId = await Promise.resolve(generateUniqueId());
-    user.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    user.date = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata",
+    });
 
     user.socialMediaLinks.instagramLink = req?.body?.instagramLink;
     user.socialMediaLinks.facebookLink = req?.body?.facebookLink;
@@ -105,21 +109,34 @@ exports.fakeUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     if (!req.query.userId || !req.query.isChannel) {
-      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
     }
 
     const user = await User.findOne({ _id: req.query.userId, isActive: true });
     if (!user) {
-      return res.status(200).json({ status: false, message: "user does not found!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "user does not found!" });
     }
 
     if (user.isBlock) {
-      return res.status(200).json({ status: false, message: "you are blocked by admin!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "you are blocked by admin!" });
     }
 
     if (req.query.isChannel === "true") {
       const isChannel = await User.findOne({ isChannel: true });
-      if (!isChannel) return res.status(200).json({ status: false, message: "channel of that user does not created please firstly create channel of that user!" });
+      if (!isChannel)
+        return res
+          .status(200)
+          .json({
+            status: false,
+            message:
+              "channel of that user does not created please firstly create channel of that user!",
+          });
 
       if (req?.body?.image) {
         console.log("req?.body?.image: ", req?.body?.image);
@@ -138,35 +155,71 @@ exports.updateUser = async (req, res) => {
 
       if (req.body.fullName && req.body.fullName !== user.fullName) {
         //Check if the new channelName is different from the current one
-        const isDuplicateFullName = await User.findOne({ fullName: req.body.fullName.trim() });
+        const isDuplicateFullName = await User.findOne({
+          fullName: req.body.fullName.trim(),
+        });
         if (isDuplicateFullName) {
-          return res.status(200).json({ status: false, message: "The provided channelName is already in use. Please choose a different one." });
+          return res
+            .status(200)
+            .json({
+              status: false,
+              message:
+                "The provided channelName is already in use. Please choose a different one.",
+            });
         }
 
-        user.fullName = req.body.fullName ? req.body.fullName.trim() : user.fullName; //channelName
+        user.fullName = req.body.fullName
+          ? req.body.fullName.trim()
+          : user.fullName; //channelName
       }
 
       user.nickName = req.body.nickName ? req.body.nickName : user.nickName;
       user.gender = req.body.gender ? req.body.gender : user.gender;
       user.age = req.body.age ? req.body.age : user.age;
-      user.mobileNumber = req.body.mobileNumber ? req.body.mobileNumber : user.mobileNumber;
+      user.mobileNumber = req.body.mobileNumber
+        ? req.body.mobileNumber
+        : user.mobileNumber;
       user.country = req.body.country ? req.body.country : user.country;
       user.ipAddress = req.body.ipAddress ? req.body.ipAddress : user.ipAddress;
-      user.descriptionOfChannel = req.body.descriptionOfChannel ? req.body.descriptionOfChannel : user.descriptionOfChannel;
-      user.socialMediaLinks.instagramLink = req.body.instagramLink ? req.body.instagramLink : user.instagramLink;
-      user.socialMediaLinks.facebookLink = req.body.facebookLink ? req.body.facebookLink : user.facebookLink;
-      user.socialMediaLinks.twitterLink = req.body.twitterLink ? req.body.twitterLink : user.twitterLink;
-      user.socialMediaLinks.websiteLink = req.body.websiteLink ? req.body.websiteLink : user.websiteLink;
+      user.descriptionOfChannel = req.body.descriptionOfChannel
+        ? req.body.descriptionOfChannel
+        : user.descriptionOfChannel;
+      user.socialMediaLinks.instagramLink = req.body.instagramLink
+        ? req.body.instagramLink
+        : user.instagramLink;
+      user.socialMediaLinks.facebookLink = req.body.facebookLink
+        ? req.body.facebookLink
+        : user.facebookLink;
+      user.socialMediaLinks.twitterLink = req.body.twitterLink
+        ? req.body.twitterLink
+        : user.twitterLink;
+      user.socialMediaLinks.websiteLink = req.body.websiteLink
+        ? req.body.websiteLink
+        : user.websiteLink;
 
       await user.save();
 
       const data = await User.findById(user._id);
       data.password = cryptr?.decrypt(data?.password);
 
-      return res.status(200).json({ status: true, message: "finally, update details of the channel or profile of the user by admin!", user: data });
+      return res
+        .status(200)
+        .json({
+          status: true,
+          message:
+            "finally, update details of the channel or profile of the user by admin!",
+          user: data,
+        });
     } else if (req.query.isChannel === "false") {
       const isChannel = await User.findOne({ isChannel: false });
-      if (!isChannel) return res.status(200).json({ status: false, message: "channel of that user already created please passed valid isChannel true!" });
+      if (!isChannel)
+        return res
+          .status(200)
+          .json({
+            status: false,
+            message:
+              "channel of that user already created please passed valid isChannel true!",
+          });
 
       user.channelId = uuid.v4();
       user.isChannel = true;
@@ -188,34 +241,68 @@ exports.updateUser = async (req, res) => {
 
       if (req.body.fullName && req.body.fullName !== user.fullName) {
         //Check if the new channelName is different from the current one
-        const isDuplicateFullName = await User.findOne({ fullName: req.body.fullName.trim() });
+        const isDuplicateFullName = await User.findOne({
+          fullName: req.body.fullName.trim(),
+        });
         if (isDuplicateFullName) {
-          return res.status(200).json({ status: false, message: "The provided channelName is already in use. Please choose a different one." });
+          return res
+            .status(200)
+            .json({
+              status: false,
+              message:
+                "The provided channelName is already in use. Please choose a different one.",
+            });
         }
 
-        user.fullName = req.body.fullName ? req.body.fullName.trim() : user.fullName; //channelName
+        user.fullName = req.body.fullName
+          ? req.body.fullName.trim()
+          : user.fullName; //channelName
       }
 
       user.nickName = req.body.nickName ? req.body.nickName : user.nickName;
       user.gender = req.body.gender ? req.body.gender : user.gender;
       user.age = req.body.age ? req.body.age : user.age;
-      user.mobileNumber = req.body.mobileNumber ? req.body.mobileNumber : user.mobileNumber;
+      user.mobileNumber = req.body.mobileNumber
+        ? req.body.mobileNumber
+        : user.mobileNumber;
       user.country = req.body.country ? req.body.country : user.country;
       user.ipAddress = req.body.ipAddress ? req.body.ipAddress : user.ipAddress;
-      user.descriptionOfChannel = req.body.descriptionOfChannel ? req.body.descriptionOfChannel : user.descriptionOfChannel;
-      user.socialMediaLinks.instagramLink = req.body.instagramLink ? req.body.instagramLink : user.instagramLink;
-      user.socialMediaLinks.facebookLink = req.body.facebookLink ? req.body.facebookLink : user.facebookLink;
-      user.socialMediaLinks.twitterLink = req.body.twitterLink ? req.body.twitterLink : user.twitterLink;
-      user.socialMediaLinks.websiteLink = req.body.websiteLink ? req.body.websiteLink : user.websiteLink;
+      user.descriptionOfChannel = req.body.descriptionOfChannel
+        ? req.body.descriptionOfChannel
+        : user.descriptionOfChannel;
+      user.socialMediaLinks.instagramLink = req.body.instagramLink
+        ? req.body.instagramLink
+        : user.instagramLink;
+      user.socialMediaLinks.facebookLink = req.body.facebookLink
+        ? req.body.facebookLink
+        : user.facebookLink;
+      user.socialMediaLinks.twitterLink = req.body.twitterLink
+        ? req.body.twitterLink
+        : user.twitterLink;
+      user.socialMediaLinks.websiteLink = req.body.websiteLink
+        ? req.body.websiteLink
+        : user.websiteLink;
 
       await user.save();
 
       const data = await User.findById(user._id);
       data.password = cryptr.decrypt(data.password);
 
-      return res.status(200).json({ status: true, message: "finally, update details of the channel or profile of the user by admin!", user: data });
+      return res
+        .status(200)
+        .json({
+          status: true,
+          message:
+            "finally, update details of the channel or profile of the user by admin!",
+          user: data,
+        });
     } else {
-      return res.status(500).json({ status: false, message: "isChannel must be passed true or false!" });
+      return res
+        .status(500)
+        .json({
+          status: false,
+          message: "isChannel must be passed true or false!",
+        });
     }
   } catch (error) {
     console.log(error);
@@ -239,10 +326,18 @@ exports.isActive = async (req, res) => {
       await user.save();
     }
 
-    return res.status(200).json({ status: true, message: "finally, activation of user handled by admin!", users });
+    return res
+      .status(200)
+      .json({
+        status: true,
+        message: "finally, activation of user handled by admin!",
+        users,
+      });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
 
@@ -254,7 +349,9 @@ exports.isBlock = async (req, res) => {
     const users = await User.find({ _id: { $in: userIds } });
 
     if (users.length !== userIds.length) {
-      return res.status(200).json({ status: false, message: "Oops ! Not all users found." });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Not all users found." });
     }
 
     for (const user of users) {
@@ -262,10 +359,18 @@ exports.isBlock = async (req, res) => {
       await user.save();
     }
 
-    return res.status(200).json({ status: true, message: "finally, block of the user handled by admin!", users });
+    return res
+      .status(200)
+      .json({
+        status: true,
+        message: "finally, block of the user handled by admin!",
+        users,
+      });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
 
@@ -273,7 +378,9 @@ exports.isBlock = async (req, res) => {
 exports.getUsers = async (req, res) => {
   try {
     if (!req.query.startDate || !req.query.endDate) {
-      return res.status(200).json({ status: false, message: "Oops! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops! Invalid details!" });
     }
 
     const start = req.query.start ? parseInt(req.query.start) : 1;
@@ -363,7 +470,9 @@ exports.getUsers = async (req, res) => {
         users: users,
       });
     } else {
-      return res.status(200).json({ status: false, message: "type must be passed valid!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "type must be passed valid!" });
     }
   } catch (error) {
     console.log(error);
@@ -378,14 +487,23 @@ exports.getUsers = async (req, res) => {
 exports.deleteUsers = async (req, res) => {
   try {
     if (!req.query.userId) {
-      return res.status(200).json({ status: false, message: "userId must be required!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "userId must be required!" });
     }
 
     const userIds = req.query.userId.split(",");
 
-    const users = await Promise.all(userIds.map((userId) => User.findById(userId)));
+    const users = await Promise.all(
+      userIds.map((userId) => User.findById(userId))
+    );
     if (users.some((user) => !user)) {
-      return res.status(200).json({ status: false, message: "No users found with the provided IDs." });
+      return res
+        .status(200)
+        .json({
+          status: false,
+          message: "No users found with the provided IDs.",
+        });
     }
 
     await users.map(async (user) => {
@@ -443,11 +561,15 @@ exports.deleteUsers = async (req, res) => {
 
     const result = await User.deleteMany({ _id: { $in: userIds } });
     if (result.deletedCount > 0) {
-      return res.status(200).json({ status: true, message: "User has been deleted by admin!" });
+      return res
+        .status(200)
+        .json({ status: true, message: "User has been deleted by admin!" });
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
 
@@ -455,16 +577,22 @@ exports.deleteUsers = async (req, res) => {
 exports.getProfile = async (req, res) => {
   try {
     if (!req.query.userId) {
-      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
     }
 
     const user = await User.findOne({ _id: req.query.userId, isActive: true });
     if (!user) {
-      return res.status(200).json({ status: false, message: "user does not found!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "user does not found!" });
     }
 
     if (user.isBlock) {
-      return res.status(200).json({ status: false, message: "you are blocked by admin!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "you are blocked by admin!" });
     }
 
     const data = await User.findById(user._id);
@@ -472,7 +600,13 @@ exports.getProfile = async (req, res) => {
       data.password = cryptr.decrypt(data.password);
     }
 
-    return res.status(200).json({ status: true, message: "Retrive Profile of the user get by admin.", user: data });
+    return res
+      .status(200)
+      .json({
+        status: true,
+        message: "Retrive Profile of the user get by admin.",
+        user: data,
+      });
   } catch (error) {
     console.log(error);
     return res.status(500).json({
@@ -485,11 +619,14 @@ exports.getProfile = async (req, res) => {
 //get users who is added by admin for channel creation
 exports.getUsersAddByAdminForChannel = async (req, res) => {
   try {
-    const users = await User.find({ isAddByAdmin: true }).select("fullName nickName channelId isChannel isActive isAddByAdmin isBlock");
+    const users = await User.find({ isAddByAdmin: true }).select(
+      "fullName nickName channelId isChannel isActive isAddByAdmin isBlock"
+    );
 
     return res.status(200).json({
       status: true,
-      message: "finally, get the all users who has been added by admin for channel creation!",
+      message:
+        "finally, get the all users who has been added by admin for channel creation!",
       users: users,
     });
   } catch (error) {
@@ -505,7 +642,9 @@ exports.getUsersAddByAdminForChannel = async (req, res) => {
 exports.channelsOfUser = async (req, res) => {
   try {
     if (!req.query.startDate || !req.query.endDate) {
-      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
     }
 
     const start = req.query.start ? parseInt(req.query.start) : 1;
@@ -530,7 +669,9 @@ exports.channelsOfUser = async (req, res) => {
       const [totalChannels, channels] = await Promise.all([
         User.countDocuments({ isAddByAdmin: true, isChannel: true }),
         User.aggregate([
-          { $match: { isAddByAdmin: true, isChannel: true, ...dateFilterQuery } },
+          {
+            $match: { isAddByAdmin: true, isChannel: true, ...dateFilterQuery },
+          },
           {
             $lookup: {
               from: "userwisesubscriptions",
@@ -576,7 +717,13 @@ exports.channelsOfUser = async (req, res) => {
       const [totalChannels, channels] = await Promise.all([
         User.countDocuments({ isAddByAdmin: false, isChannel: true }),
         User.aggregate([
-          { $match: { isAddByAdmin: false, isChannel: true, ...dateFilterQuery } },
+          {
+            $match: {
+              isAddByAdmin: false,
+              isChannel: true,
+              ...dateFilterQuery,
+            },
+          },
           {
             $lookup: {
               from: "userwisesubscriptions",
@@ -619,26 +766,42 @@ exports.channelsOfUser = async (req, res) => {
         channels: channels,
       });
     } else {
-      return res.status(200).json({ status: false, message: "type must be passed valid!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "type must be passed valid!" });
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
 
 //update password of user added by admin
 exports.updatePassword = async (req, res) => {
   try {
-    if (!req.body.oldPass || !req.body.newPass || !req.body.confirmPass || !req.body.userId) return res.status(200).json({ status: false, message: "Oops ! Invalid details!!" });
+    if (
+      !req.body.oldPass ||
+      !req.body.newPass ||
+      !req.body.confirmPass ||
+      !req.body.userId
+    )
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!!" });
 
     const user = await User.findOne({ _id: req.body.userId, isActive: true });
     if (!user) {
-      return res.status(200).json({ status: false, message: "User does not found!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "User does not found!" });
     }
 
     if (user.isBlock) {
-      return res.status(200).json({ status: false, message: "you are blocked by admin!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "you are blocked by admin!" });
     }
 
     if (cryptr.decrypt(user.password) !== req.body.oldPass) {
@@ -661,7 +824,10 @@ exports.updatePassword = async (req, res) => {
     const data = await User.findById(user._id);
     data.password = cryptr.decrypt(hash);
 
-    console.log("decrypt password in update password of user by admin ========", data.password);
+    console.log(
+      "decrypt password in update password of user by admin ========",
+      data.password
+    );
 
     return res.status(200).json({
       status: true,
@@ -681,12 +847,22 @@ exports.updatePassword = async (req, res) => {
 exports.deleteChannelByAdmin = async (req, res) => {
   try {
     if (!req.query.channelId) {
-      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
     }
 
-    const user = await User.findOne({ channelId: req.query.channelId.trim(), isChannel: true });
+    const user = await User.findOne({
+      channelId: req.query.channelId.trim(),
+      isChannel: true,
+    });
     if (!user) {
-      return res.status(200).json({ status: false, message: "User does not found with that channel!" });
+      return res
+        .status(200)
+        .json({
+          status: false,
+          message: "User does not found with that channel!",
+        });
     }
 
     user.isChannel = false;
@@ -694,7 +870,13 @@ exports.deleteChannelByAdmin = async (req, res) => {
     user.descriptionOfChannel = null;
     await user.save();
 
-    res.status(200).json({ status: true, message: "Now, Channel is not active.", user: user });
+    res
+      .status(200)
+      .json({
+        status: true,
+        message: "Now, Channel is not active.",
+        user: user,
+      });
 
     const videosToDelete = await Video.find({ userId: user?._id });
     console.log("Total videos:   ", videosToDelete?.length);
@@ -732,6 +914,8 @@ exports.deleteChannelByAdmin = async (req, res) => {
     ]);
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
