@@ -136,25 +136,25 @@ exports.store = async (req, res) => {
       return res.status(400).json({ status: false, message: "Oops! Invalid details!" });
     }
 
-  
+
 
     // const data = await LiveUser(code, "51562687");
 
     // if (data) {
-      const admin = new Admin();
-      admin.email = email.trim();
-      admin.password = cryptr.encrypt(password);
-      admin.purchaseCode = code.trim();
-      await admin.save();
+    const admin = new Admin();
+    admin.email = email.trim();
+    admin.password = cryptr.encrypt(password);
+    admin.purchaseCode = code.trim();
+    await admin.save();
 
-      let login = await Login.findOne({});
-      if (!login) {
-        login = new Login();
-      }
-      login.status = true;
-      await login.save();
+    let login = await Login.findOne({});
+    if (!login) {
+      login = new Login();
+    }
+    login.status = true;
+    await login.save();
 
-      return res.status(200).json({ status: true, message: "Admin created Successfully!", admin });
+    return res.status(200).json({ status: true, message: "Admin created Successfully!", admin });
     // } else {
     //   return res.status(400).json({ status: false, message: "Purchase code is not valid." });
     // }
@@ -296,7 +296,7 @@ exports.login = async (req, res) => {
     // }
 
     const decryptedPassword = cryptr.decrypt(admin.password);
-    
+
     if (decryptedPassword !== password) {
       return res.status(200).json({
         status: false,
@@ -406,19 +406,17 @@ exports.update = async (req, res) => {
 
 //send email for forgot the password (forgot password)
 exports.forgotPassword = async (req, res) => {
+
   try {
     if (!req.body.email) {
       return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
     }
-
     const admin = await Admin.findOne({ email: req.body.email.trim() });
     if (!admin) {
       return res.status(200).json({ status: false, message: "Admin does not found with that email." });
     }
-console.log('object :>> ', process?.env?.PASSWORD);
     var transporter = nodemailer.createTransport({
       service: "gmail",
-      
       auth: {
         user: process?.env?.EMAIL,
         pass: process?.env?.PASSWORD,

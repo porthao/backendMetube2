@@ -38,7 +38,10 @@ bucketName=metube  # Your Wasabi bucket name
 # Nodemailer Email Configuration (Ethereal)
 EMAIL=bernard.thiel@ethereal.email 
 PASSWORD=s8MYdmkaykmEUDJ6WT
+
 appName=Bernard Thiel
+
+baseURL=
 ```
 
 ## 4. Install Dependencies and Start the Server

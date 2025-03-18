@@ -28,6 +28,7 @@ const login = require("./login.route");
 const adRewardCoin = require("./adRewardCoin.route");
 const dailyRewardCoin = require("./dailyRewardCoin.route");
 const coinplan = require("./coinplan.route");
+const secretKey = require("./secretKey.route")
 
 //exports admin's route.js
 route.use("/admin", admin);
@@ -52,5 +53,6 @@ route.use("/adRewardCoin", AdminMiddleware, adRewardCoin);
 route.use("/dailyRewardCoin", AdminMiddleware, dailyRewardCoin);
 route.use("/coinplan", AdminMiddleware, coinplan);
 route.use("/login", login);
+route.use("/secretKey", secretKey)
 
 module.exports = route;
