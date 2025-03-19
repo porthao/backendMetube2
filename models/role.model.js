@@ -15,4 +15,7 @@ const RoleSchema = mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
+RoleSchema.index({ role_name: 1 });
+RoleSchema.index({ status: 1 });
+
 module.exports = mongoose.model("Role", RoleSchema);

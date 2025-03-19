@@ -1,6 +1,8 @@
 const Staff = require("../../models/staff.model.js");
 const Cryptr = require("cryptr");
-
+const nodemailer = require("nodemailer");
+//jwt token
+const jwt = require("jsonwebtoken");
 const cryptr = new Cryptr("myTotallySecretKey");
 const {
   validateKeyInput,
@@ -16,32 +18,21 @@ exports.create = async (req, res) => {
   try {
     const { staffId } = req.query;
 
-    // Check if staff exists when staffId is provided
     if (!staffId) {
       return res
         .status(200)
         .json({ status: false, message: "staffId must be required!" });
     }
-    if (staffId) {
-      const staff = await Staff.findOne({ _id: staffId });
-      if (!staff) {
-        return res.status(200).json({
-          status: false,
-          message: `Staff not found`,
-        });
-      }
-    }
 
-    // Validate required fields
     const requiredFields = getRequiredFields(Staff);
     const validateInput = validateKeyInput(requiredFields, req.body);
+
     if (validateInput.length > 0)
       return res.status(200).json({
         status: false,
         message: `Required data fields missing: ${validateInput.join(", ")}`,
       });
 
-    // Validate enum values for status
     if (req.body.status && !isValidEnumData(STATUS_TYPE, req.body.status)) {
       return res.status(200).json({
         status: false,
@@ -51,7 +42,18 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Validate enum values for gender
+    if (staffId) {
+      const staff = await Staff.findOne({
+        status: { $ne: STATUS_TYPE.IsDelete },
+        _id: staffId,
+      });
+      if (!staff) {
+        return res.status(200).json({
+          status: false,
+          message: `Staff not found`,
+        });
+      }
+    }
     if (!isValidEnumData(GENDER_TYPE, req.body.gender)) {
       return res.status(200).json({
         status: false,
@@ -61,8 +63,8 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Check if email or username already exists
     const existsStaff = await Staff.findOne({
+      status: { $ne: STATUS_TYPE.IsDelete },
       $or: [{ email: req.body.email }, { username: req.body.username }],
     });
     if (existsStaff)
@@ -71,11 +73,9 @@ exports.create = async (req, res) => {
         message: "Email or Username already exists",
       });
 
-    // Encrypt password
     const hashPassword = cryptr.encrypt(req.body.password);
     const new_name = generateRandomStringWithTime(5);
 
-    // Create new staff
     const staff = await Staff.create({
       ...req.body,
       password: hashPassword,
@@ -83,14 +83,12 @@ exports.create = async (req, res) => {
       created_by: staffId,
     });
 
-    // Success response
     return res.status(200).json({
       status: true,
-      message: "Staff has been created successfully by admin!",
+      message: "Staff has been created successfully by staff!",
       data: staff,
     });
   } catch (error) {
-    // Catch any errors and send them in the response
     return res.status(500).json({
       status: false,
       message: error.message || "Internal Server Error",
@@ -102,7 +100,6 @@ exports.update = async (req, res) => {
   try {
     const { staffId, staffRefId } = req.query;
 
-    // Check if staffId is provided (must be required)
     if (!staffId || !staffRefId) {
       return res.status(200).json({
         status: false,
@@ -110,7 +107,6 @@ exports.update = async (req, res) => {
       });
     }
 
-    // If staffRefId is provided, check if the staff exists
     if (staffRefId) {
       const staff = await Staff.findById(staffRefId);
       if (!staff) {
@@ -121,10 +117,8 @@ exports.update = async (req, res) => {
       }
     }
 
-    // Extract data according to schema
     const data = extractDataBySchema(Staff, req.body);
 
-    // Validate 'status' and 'gender' enums
     if (data.status && !isValidEnumData(STATUS_TYPE, data.status)) {
       return res.status(200).json({
         status: false,
@@ -143,10 +137,10 @@ exports.update = async (req, res) => {
       });
     }
 
-    // Check if email or username already exists
     if (data.email || data.username) {
       const existsStaff = await Staff.findOne({
-        $or: [{ email: data.email }, { username: data.username }],
+        status: { $ne: STATUS_TYPE.IsDelete },
+        $or: [{ email: req.body.email }, { username: req.body.username }],
       });
       if (existsStaff) {
         return res.status(200).json({
@@ -156,17 +150,17 @@ exports.update = async (req, res) => {
       }
     }
 
-    // Convert 2FA values if provided
     if (data._2fa_enable)
       data._2fa_enable = convertStringToNumber(data._2fa_enable);
     if (data._2fa_verify)
       data._2fa_verify = convertStringToNumber(data._2fa_verify);
 
-    // Update the staff with the new data
+    if (data.password) delete data.password;
+
     const staff = await Staff.findByIdAndUpdate(
       { _id: staffId },
       { ...data, updated_by: staffRefId },
-      { new: true } // Returns the updated staff
+      { new: true }
     );
 
     if (!staff) {
@@ -176,10 +170,48 @@ exports.update = async (req, res) => {
       });
     }
 
-    // Return success response
     return res.status(200).json({
       status: true,
       message: "Staff has been updated successfully",
+      data: staff,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+exports.delete = async (req, res) => {
+  try {
+    const { staffId, staffRefId } = req.query;
+
+    if (!staffId || !staffRefId) {
+      return res.status(200).json({
+        status: false,
+        message: `${!staffId ? "staffId" : "staffRefId"} must be required!`,
+      });
+    }
+
+    if (staffRefId) {
+      const staff = await Staff.findById(staffRefId);
+      if (!staff) {
+        return res.status(200).json({
+          status: false,
+          message: `StaffRef not found`,
+        });
+      }
+    }
+
+    const staff = await Staff.findByIdAndUpdate(
+      { _id: staffId },
+      { status: STATUS_TYPE.IsDelete, deleted_by: staffRefId },
+      { new: true }
+    );
+    return res.status(200).json({
+      status: true,
+      message: "Staff has been delete successfully",
       data: staff,
     });
   } catch (error) {
@@ -198,13 +230,17 @@ exports.getProfile = async (req, res) => {
         .status(200)
         .json({ status: false, message: "staffId must be required!" });
     }
-    const staff = await Staff.findById(staffId);
+    const staff = await Staff.findOne({
+      _id: staffId,
+      status: { $ne: STATUS_TYPE.IsDelete },
+    });
     if (!staff) {
       return res.status(200).json({
         status: false,
         message: `Staff not found`,
       });
     }
+    staff.password = cryptr.decrypt(staff?.password);
     return res.status(200).json({
       status: true,
       message: "get staffProfile successfully",
@@ -243,7 +279,7 @@ exports.getStaff = async (req, res) => {
 
     const staff = await Staff.aggregate([
       {
-        $match: { ...dateFilterQuery },
+        $match: { ...dateFilterQuery, status: { $ne: STATUS_TYPE.IsDelete } },
       },
       {
         $project: {
@@ -256,7 +292,7 @@ exports.getStaff = async (req, res) => {
           new_name: 1,
           position: 1,
           username: 1,
-          // password: 1,
+
           address: 1,
           status: 1,
           _2fa_qr_code: 1,
@@ -282,5 +318,261 @@ exports.getStaff = async (req, res) => {
       status: false,
       message: error.message || "Internal Server Error",
     });
+  }
+};
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops! Invalid details!" });
+    }
+
+    const staff = await Staff.findOne({
+      status: { $ne: STATUS_TYPE.IsDelete },
+      email: email.trim(),
+    });
+
+    if (!staff) {
+      return res.status(200).json({
+        status: false,
+        message: "Oops! staff not found with that email.",
+      });
+    }
+
+    const decryptedPassword = cryptr.decrypt(staff.password);
+
+    if (decryptedPassword !== password) {
+      return res.status(200).json({
+        status: false,
+        message: "Oops! Password doesn't match!",
+      });
+    }
+
+    const payload = {
+      _id: staff._id,
+      username: staff.username,
+      email: staff.email,
+      password: staff.password,
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET);
+
+    return res.status(200).json({
+      status: true,
+      message: "staff login Successfully!",
+      token,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    if (!req.body.email) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
+    }
+    const staff = await Staff.findOne({
+      status: { $ne: STATUS_TYPE.IsDelete },
+      email: req.body.email.trim(),
+    });
+    if (!staff) {
+      return res.status(200).json({
+        status: false,
+        message: "Staff does not found with that email.",
+      });
+    }
+    var transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process?.env?.EMAIL,
+        pass: process?.env?.PASSWORD,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    var tab = "";
+    tab += "<!DOCTYPE html><html><head>";
+    tab +=
+      "<meta charset='utf-8'><meta http-equiv='x-ua-compatible' content='ie=edge'><meta name='viewport' content='width=device-width, initial-scale=1'>";
+    tab += "<style type='text/css'>";
+    tab +=
+      " @media screen {@font-face {font-family: 'Source Sans Pro';font-style: normal;font-weight: 400;}";
+    tab +=
+      "@font-face {font-family: 'Source Sans Pro';font-style: normal;font-weight: 700;}}";
+    tab +=
+      "body,table,td,a {-ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }";
+    tab += "table,td {mso-table-rspace: 0pt;mso-table-lspace: 0pt;}";
+    tab += "img {-ms-interpolation-mode: bicubic;}";
+    tab +=
+      "a[x-apple-data-detectors] {font-family: inherit !important;font-size: inherit !important;font-weight: inherit !important;line-height:inherit !important;color: inherit !important;text-decoration: none !important;}";
+    tab += "div[style*='margin: 16px 0;'] {margin: 0 !important;}";
+    tab +=
+      "body {width: 100% !important;height: 100% !important;padding: 0 !important;margin: 0 !important;}";
+    tab += "table {border-collapse: collapse !important;}";
+    tab += "a {color: #1a82e2;}";
+    tab +=
+      "img {height: auto;line-height: 100%;text-decoration: none;border: 0;outline: none;}";
+    tab += "</style></head><body>";
+    tab += "<table border='0' cellpadding='0' cellspacing='0' width='100%'>";
+    tab +=
+      "<tr><td align='center' bgcolor='#e9ecef'><table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 600px;'>";
+    tab +=
+      "<tr><td align='center' valign='top' bgcolor='#ffffff' style='padding:36px 24px 0;border-top: 3px solid #d4dadf;'><a href='#' target='_blank' style='display: inline-block;'>";
+    tab +=
+      "<img src='https://www.stampready.net/dashboard/editor/user_uploads/zip_uploads/2018/11/23/5aXQYeDOR6ydb2JtSG0p3uvz/zip-for-upload/images/template1-icon.png' alt='Logo' border='0' width='48' style='display: block; width: 500px; max-width: 500px; min-width: 500px;'></a>";
+    tab +=
+      "</td></tr></table></td></tr><tr><td align='center' bgcolor='#e9ecef'><table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 600px;'><tr><td align='center' bgcolor='#ffffff'>";
+    tab +=
+      "<h1 style='margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 48px;'>SET YOUR PASSWORD</h1></td></tr></table></td></tr>";
+    tab +=
+      "<tr><td align='center' bgcolor='#e9ecef'><table border='0' cellpadding='0' cellspacing='0' width='100%' style='max-width: 600px;'><tr><td align='center' bgcolor='#ffffff' style='padding: 24px; font-size: 16px; line-height: 24px;font-weight: 600'>";
+    tab +=
+      "<p style='margin: 0;'>Not to worry, We got you! Let's get you a new password.</p></td></tr><tr><td align='left' bgcolor='#ffffff'>";
+    tab +=
+      "<table border='0' cellpadding='0' cellspacing='0' width='100%'><tr><td align='center' bgcolor='#ffffff' style='padding: 12px;'>";
+    tab +=
+      "<table border='0' cellpadding='0' cellspacing='0'><tr><td align='center' style='border-radius: 4px;padding-bottom: 50px;'>";
+    tab +=
+      "<a href='" +
+      process?.env?.baseURL +
+      "changePassword/" +
+      staff._id +
+      "' target='_blank' style='display: inline-block; padding: 16px 36px; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 4px;background: #FE9A16; box-shadow: -2px 10px 20px -1px #33cccc66;'>SUBMIT PASSWORD</a>";
+    tab +=
+      "</td></tr></table></td></tr></table></td></tr></table></td></tr></table></body></html>";
+
+    var mailOptions = {
+      from: process?.env?.EMAIL,
+      to: req.body.email?.trim(),
+      subject: `Sending email from ${process?.env?.appName} for Password Security`,
+      html: tab,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      console.log("mailOptions :>> ", mailOptions);
+      if (error) {
+        console.log(error);
+        return res.status(200).json({
+          status: false,
+          message: "Email send Error",
+        });
+      } else {
+        return res.status(200).json({
+          status: true,
+          message: "Email send for forget the password!",
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+exports.updatePassword = async (req, res) => {
+  try {
+    req.staff = { _id: "67da86a6dafa5824f9f91aeb" };
+
+    const staff = await Staff.findById(req?.staff._id);
+    if (!staff) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Staff does not found." });
+    }
+
+    if (!req.body.oldPass || !req.body.newPass || !req.body.confirmPass) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops! Invalid details." });
+    }
+
+    if (cryptr.decrypt(staff.password) !== req.body.oldPass) {
+      return res.status(200).json({
+        status: false,
+        message: "Oops! Password doesn't match!",
+      });
+    }
+
+    if (req.body.newPass !== req.body.confirmPass) {
+      return res.status(200).json({
+        status: false,
+        message: "Oops! New Password and Confirm Password don't match!",
+      });
+    }
+
+    const hash = cryptr.encrypt(req.body.newPass);
+    staff.password = hash;
+    await staff.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "Password changed successfully!",
+      staff: staff,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: false,
+      error: error.message || "Internal Server Error!!",
+    });
+  }
+};
+
+exports.setPassword = async (req, res) => {
+  try {
+    req.staff = { _id: "67da86a6dafa5824f9f91aeb" };
+
+    const staff = await Staff.findById(req?.staff._id);
+    if (!staff) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Staff does not found." });
+    }
+
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || !confirmPassword) {
+      return res
+        .status(200)
+        .json({ status: false, message: "Oops ! Invalid details!" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(200).json({
+        status: false,
+        message: "Oops! New Password and Confirm Password don't match!",
+      });
+    }
+
+    staff.password = cryptr.encrypt(newPassword);
+    await staff.save();
+
+    staff.password = cryptr.decrypt(staff?.password);
+
+    return res.status(200).json({
+      status: true,
+      message: "Password has been updated Successfully.",
+      staff,
+    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ status: false, error: error.message || "Internal Server Error" });
   }
 };

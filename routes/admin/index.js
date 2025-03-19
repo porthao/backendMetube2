@@ -31,9 +31,10 @@ const coinplan = require("./coinplan.route");
 
 const permission = require("./permission.route");
 const staff = require("./staff.route");
+const role = require("./role.route");
+const rolePermissionDetails = require("./rolePermissionDetails.route");
 
-const secretKey = require("./secretKey.route")
-
+const secretKey = require("./secretKey.route");
 
 //exports admin's route.js
 route.use("/admin", admin);
@@ -61,7 +62,9 @@ route.use("/login", login);
 
 route.use("/permission", permission);
 route.use("/staff", staff);
-route.use("/secretKey", secretKey)
+route.use("/role", role);
+route.use("/rolePermissionDetails", rolePermissionDetails);
 
+route.use("/secretKey", secretKey);
 
 module.exports = route;

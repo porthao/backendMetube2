@@ -21,4 +21,5 @@ const PermissionSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false } // Fixed typo
 );
 
+PermissionSchema.index({ permission_name: 1, group_name: 1 });
 module.exports = mongoose.model("Permission", PermissionSchema);

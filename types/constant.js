@@ -95,10 +95,10 @@ exports.VIDEO_PRIVACY_TYPE = {
   PRIVATE: 2,
 };
 
-
 exports.STATUS_TYPE = {
   IsActive: "IsActive",
   NotActive: "NotActive",
+  IsDelete: "IsDelete",
 };
 
 exports.GENDER_TYPE = {

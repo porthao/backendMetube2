@@ -88,3 +88,22 @@ exports.generateRandomStringWithTime = (length = 6) => {
 exports.isValidEnumData = (enumObj, data) => {
   return Object.values(enumObj).includes(data);
 };
+
+/**
+ *
+ * @param {*} data
+ * @returns Array uniqueData
+ */
+exports.getUniqueDataRolePermissionDetails = (data) => {
+  const uniqueData = [];
+  const seen = new Set();
+  data.forEach((item) => {
+    const identifier = `${item.role_id}-${item.permission_id}`;
+    if (!seen.has(identifier)) {
+      uniqueData.push(item);
+      seen.add(identifier);
+    }
+  });
+
+  return uniqueData;
+};
