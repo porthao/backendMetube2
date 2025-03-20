@@ -8,7 +8,7 @@ const PermissionSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(STATUS_TYPE),
-      default: STATUS_TYPE.IsActive,
+      default: STATUS_TYPE.Active,
     },
     created_by: {
       type: mongoose.Types.ObjectId,

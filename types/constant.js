@@ -94,13 +94,11 @@ exports.VIDEO_PRIVACY_TYPE = {
   PUBLIC: 1,
   PRIVATE: 2,
 };
-
 exports.STATUS_TYPE = {
-  IsActive: "IsActive",
-  NotActive: "NotActive",
-  IsDelete: "IsDelete",
+  Active: "IsActive", 
+  Inactive: "NotActive", 
+  Deleted: "IsDeleted", 
 };
-
 exports.GENDER_TYPE = {
   Male: "Male",
   Female: "Female",

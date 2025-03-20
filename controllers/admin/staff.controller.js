@@ -13,16 +13,17 @@ const {
   isValidEnumData,
 } = require("../../util/validate.js");
 const { STATUS_TYPE, GENDER_TYPE } = require("../../types/constant.js");
+const { default: mongoose } = require("mongoose");
 
 exports.create = async (req, res) => {
   try {
-    const { staffId } = req.query;
+    const { staffId } = req.admin._id;
 
-    if (!staffId) {
-      return res
-        .status(200)
-        .json({ status: false, message: "staffId must be required!" });
-    }
+    // if (!staffId) {
+    //   return res
+    //     .status(200)
+    //     .json({ status: false, message: "staffId must be required!" });
+    // }
 
     const requiredFields = getRequiredFields(Staff);
     const validateInput = validateKeyInput(requiredFields, req.body);
@@ -44,7 +45,7 @@ exports.create = async (req, res) => {
 
     if (staffId) {
       const staff = await Staff.findOne({
-        status: { $ne: STATUS_TYPE.IsDelete },
+        status: { $ne: STATUS_TYPE.Deleted },
         _id: staffId,
       });
       if (!staff) {
@@ -64,7 +65,7 @@ exports.create = async (req, res) => {
     }
 
     const existsStaff = await Staff.findOne({
-      status: { $ne: STATUS_TYPE.IsDelete },
+      status: { $ne: STATUS_TYPE.Deleted },
       $or: [{ email: req.body.email }, { username: req.body.username }],
     });
     if (existsStaff)
@@ -98,12 +99,12 @@ exports.create = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
-    const { staffId, staffRefId } = req.query;
-
-    if (!staffId || !staffRefId) {
+    const { staffId } = req.query;
+    const staffRefId = req.admin._id;
+    if (!staffId) {
       return res.status(200).json({
         status: false,
-        message: `${!staffId ? "staffId" : "staffRefId"} must be required!`,
+        message: `staffId must be required!`,
       });
     }
 
@@ -139,7 +140,7 @@ exports.update = async (req, res) => {
 
     if (data.email || data.username) {
       const existsStaff = await Staff.findOne({
-        status: { $ne: STATUS_TYPE.IsDelete },
+        status: { $ne: STATUS_TYPE.Deleted },
         $or: [{ email: req.body.email }, { username: req.body.username }],
       });
       if (existsStaff) {
@@ -185,12 +186,12 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
-    const { staffId, staffRefId } = req.query;
-
-    if (!staffId || !staffRefId) {
+    const { staffId } = req.query;
+    const staffRefId = req.admin._id;
+    if (!staffId) {
       return res.status(200).json({
         status: false,
-        message: `${!staffId ? "staffId" : "staffRefId"} must be required!`,
+        message: `staffId must be required!`,
       });
     }
 
@@ -206,9 +207,15 @@ exports.delete = async (req, res) => {
 
     const staff = await Staff.findByIdAndUpdate(
       { _id: staffId },
-      { status: STATUS_TYPE.IsDelete, deleted_by: staffRefId },
+      { status: STATUS_TYPE.Deleted, deleted_by: staffRefId },
       { new: true }
     );
+    if (!staff) {
+      return res.status(200).json({
+        status: false,
+        message: `StaffRef not found`,
+      });
+    }
     return res.status(200).json({
       status: true,
       message: "Staff has been delete successfully",
@@ -224,27 +231,46 @@ exports.delete = async (req, res) => {
 
 exports.getProfile = async (req, res) => {
   try {
-    const { staffId } = req.query;
-    if (!staffId) {
-      return res
-        .status(200)
-        .json({ status: false, message: "staffId must be required!" });
-    }
-    const staff = await Staff.findOne({
-      _id: staffId,
-      status: { $ne: STATUS_TYPE.IsDelete },
-    });
-    if (!staff) {
+    const staff = await Staff.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(req.admin._id),
+          status: { $ne: STATUS_TYPE.Deleted },
+        },
+      },
+      {
+        $lookup: {
+          from: "roles",
+          localField: "role_id",
+          foreignField: "_id",
+          as: "role",
+        },
+      },
+      {
+        $addFields: {
+          role: {
+            $filter: {
+              input: "$role",
+              as: "role",
+              cond: { $ne: ["$$role.status", STATUS_TYPE.Deleted] },
+            },
+          },
+        },
+      },
+    ]);
+
+    if (!staff[0]) {
       return res.status(200).json({
         status: false,
         message: `Staff not found`,
       });
     }
-    staff.password = cryptr.decrypt(staff?.password);
+
+    staff[0].password = cryptr.decrypt(staff[0]?.password);
     return res.status(200).json({
       status: true,
       message: "get staffProfile successfully",
-      data: staff,
+      data: staff[0],
     });
   } catch (error) {
     return res.status(500).json({
@@ -279,7 +305,26 @@ exports.getStaff = async (req, res) => {
 
     const staff = await Staff.aggregate([
       {
-        $match: { ...dateFilterQuery, status: { $ne: STATUS_TYPE.IsDelete } },
+        $match: { ...dateFilterQuery, status: { $ne: STATUS_TYPE.Deleted } },
+      },
+      {
+        $lookup: {
+          from: "roles",
+          localField: "role_id",
+          foreignField: "_id",
+          as: "role",
+        },
+      },
+      {
+        $addFields: {
+          role: {
+            $filter: {
+              input: "$role",
+              as: "role",
+              cond: { $ne: ["$$role.status", STATUS_TYPE.Deleted] },
+            },
+          },
+        },
       },
       {
         $project: {
@@ -292,7 +337,7 @@ exports.getStaff = async (req, res) => {
           new_name: 1,
           position: 1,
           username: 1,
-
+          role_id: 1,
           address: 1,
           status: 1,
           _2fa_qr_code: 1,
@@ -300,13 +345,14 @@ exports.getStaff = async (req, res) => {
           _2fa_verify: 1,
           createdAt: 1,
           updatedAt: 1,
+          role: 1,
         },
       },
 
       { $sort: { createdAt: -1 } },
       { $skip: (start - 1) * limit },
       { $limit: limit },
-    ]);
+    ]).exec();
 
     return res.status(200).json({
       status: true,
@@ -332,7 +378,7 @@ exports.login = async (req, res) => {
     }
 
     const staff = await Staff.findOne({
-      status: { $ne: STATUS_TYPE.IsDelete },
+      status: { $eq: STATUS_TYPE.Active },
       email: email.trim(),
     });
 
@@ -383,7 +429,7 @@ exports.forgotPassword = async (req, res) => {
         .json({ status: false, message: "Oops ! Invalid details!" });
     }
     const staff = await Staff.findOne({
-      status: { $ne: STATUS_TYPE.IsDelete },
+      status: { $ne: STATUS_TYPE.Deleted },
       email: req.body.email.trim(),
     });
     if (!staff) {
@@ -486,9 +532,22 @@ exports.forgotPassword = async (req, res) => {
 
 exports.updatePassword = async (req, res) => {
   try {
-    req.staff = { _id: "67da86a6dafa5824f9f91aeb" };
+    const { staffId } = req.query;
+    const staffRefId = req.admin._id;
 
-    const staff = await Staff.findById(req?.staff._id);
+    if (staffRefId) {
+      const staff = await Staff.findById(staffRefId);
+      if (!staff) {
+        return res.status(200).json({
+          status: false,
+          message: `StaffRef not found`,
+        });
+      }
+    }
+    const staff = await Staff.findOne({
+      _id: staffId ?? req.admin._id,
+      status: STATUS_TYPE.Active,
+    });
     if (!staff) {
       return res
         .status(200)
@@ -516,6 +575,7 @@ exports.updatePassword = async (req, res) => {
     }
 
     const hash = cryptr.encrypt(req.body.newPass);
+    staff.updated_by = req.admin._id;
     staff.password = hash;
     await staff.save();
 
@@ -535,9 +595,7 @@ exports.updatePassword = async (req, res) => {
 
 exports.setPassword = async (req, res) => {
   try {
-    req.staff = { _id: "67da86a6dafa5824f9f91aeb" };
-
-    const staff = await Staff.findById(req?.staff._id);
+    const staff = await Staff.findById(req?.admin._id);
     if (!staff) {
       return res
         .status(200)
@@ -560,6 +618,7 @@ exports.setPassword = async (req, res) => {
     }
 
     staff.password = cryptr.encrypt(newPassword);
+    staff.updated_by = req?.admin._id;
     await staff.save();
 
     staff.password = cryptr.decrypt(staff?.password);

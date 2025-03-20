@@ -1,19 +1,16 @@
+const express = require("express");
+const RoleController = require("../../controllers/admin/role.controller");
+const AdminMiddleware = require("../../middleware/admin.middleware");
 
-const express = require("express")
-const RoleController = require("../../controllers/admin/role.controller")
+const route = express.Router();
 
-const route = express.Router()
+route.get("/getRole", AdminMiddleware, RoleController.getRole);
+route.get("/getRoleById", AdminMiddleware, RoleController.getRoleById);
 
+route.post("/create", AdminMiddleware, RoleController.create);
 
+route.put("/update", AdminMiddleware, RoleController.update);
 
-route.get("/getRole", RoleController.getRole)
+route.delete("/delete", AdminMiddleware, RoleController.delete);
 
-route.post("/create", RoleController.create)
-
-route.put("/update", RoleController.update)
-
-route.delete("/delete", RoleController.delete)
-
-
-
-module.exports = route
+module.exports = route;

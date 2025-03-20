@@ -17,7 +17,7 @@ const rolePermissionDetailModel = require("../../models/rolePermissionDetail.mod
 
 exports.create = async (req, res) => {
   try {
-    const { staffId } = req.query;
+    const staffId = req.admin._id;
 
     const data = getUniqueDataRolePermissionDetails(req.body.data);
 
@@ -57,7 +57,7 @@ exports.create = async (req, res) => {
         ]);
 
       if (roleExists && permissionExists && !rolePermissionDetailsExists) {
-        rolePermissionList.push({ ...element, staffId });
+        rolePermissionList.push({ ...element, created_by: staffId });
       }
 
       if (!roleExists || !permissionExists || rolePermissionDetailsExists) {
@@ -126,6 +126,7 @@ exports.delete = async (req, res) => {
 
 exports.update = async (req, res) => {
   try {
+    const staffId = req.admin._id;
     let { rolePermissionDetailsId } = req.query;
     const { role_id, permission_id } = req.body;
     if (!role_id || !permission_id) {
@@ -141,7 +142,7 @@ exports.update = async (req, res) => {
         message: "rolePermissionDetailsId must be required!",
       });
     }
-    const { staffId } = req.query;
+
     if (!staffId) {
       return res
         .status(200)
@@ -149,7 +150,7 @@ exports.update = async (req, res) => {
     }
     const staff = await staffModel.findOne({
       _id: staffId,
-      status: { $ne: STATUS_TYPE.IsDelete },
+      status: { $ne: STATUS_TYPE.Deleted },
     });
     if (!staff) {
       return res.status(200).json({

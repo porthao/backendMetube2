@@ -6,7 +6,7 @@ const RoleSchema = mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(STATUS_TYPE),
-      default: STATUS_TYPE.IsActive,
+      default: STATUS_TYPE.Active,
     },
     created_by: { type: mongoose.Types.ObjectId, ref: "Staff" },
     updated_by: { type: mongoose.Types.ObjectId, ref: "Staff", default: null },

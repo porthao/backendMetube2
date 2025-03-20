@@ -22,7 +22,7 @@ const StaffSchema = mongoose.Schema(
     status: {
       type: String,
       enum: Object.values(STATUS_TYPE),
-      default: STATUS_TYPE.IsActive,
+      default: STATUS_TYPE.Active,
     },
     _2fa_secret: {
       type: String,
@@ -36,11 +36,11 @@ const StaffSchema = mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: "Staff",
       default: null,
-      require: true,
+      require: false,
     },
     updated_by: { type: mongoose.Types.ObjectId, ref: "Staff", default: null },
     delete_by: { type: mongoose.Types.ObjectId, ref: "Staff", default: null },
-    role_id: { type: mongoose.Types.ObjectId, ref: "Role" },
+    role_id: { type: mongoose.Types.ObjectId, ref: "Role", require: false },
   },
   { timestamps: true, versionKey: false }
 );

@@ -4,7 +4,20 @@ const { STATUS_TYPE } = require("../../types/constant");
 exports.create = async (req, res) => {
   try {
     const data = extractDataBySchema(Permission, req.body);
-    const permission = await Permission.create(data);
+    const permissionExists = await Permission.findOne({
+      permission_name: data.permission_name,
+      group_name: data.group_name,
+    });
+
+    if (permissionExists)
+      return res.status(200).json({
+        status: false,
+        message: "permission is already exists",
+      });
+    const permission = await Permission.create({
+      ...data,
+      created_by: req.admin._id,
+    });
 
     res.status(200).json({
       status: true,
@@ -23,7 +36,7 @@ exports.create = async (req, res) => {
 exports.getPermission = async (req, res) => {
   try {
     const permission = await Permission.aggregate([
-      { $match: { status: { $ne: STATUS_TYPE.IsDelete } } },
+      { $match: { status: { $ne: STATUS_TYPE.Deleted } } },
       { $sort: { group_name: 1, createdAt: -1 } },
     ]);
     res.status(200).json({
