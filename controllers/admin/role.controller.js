@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Role = require("../../models/role.model");
 const Staff = require("../../models/staff.model");
 const { STATUS_TYPE } = require("../../types/constant");
@@ -211,7 +212,9 @@ exports.getRole = async (req, res) => {
     }
     const roles = await Role.aggregate([
       {
-        $match: { status: { $ne: STATUS_TYPE.Deleted }, ...dateFilterQuery },
+        $match: {
+          status: { $ne: STATUS_TYPE.Deleted },
+        },
       },
       {
         $lookup: {
@@ -237,12 +240,6 @@ exports.getRole = async (req, res) => {
               as: "rolePerm",
               in: {
                 _id: "$$rolePerm._id",
-                role_id: "$$rolePerm.role_id",
-                permission_id: "$$rolePerm.permission_id",
-                updated_by: "$$rolePerm.updated_by",
-                deleted_by: "$$rolePerm.deleted_by",
-                createdAt: "$$rolePerm.createdAt",
-                updatedAt: "$$rolePerm.updatedAt",
                 permission_Details: {
                   $arrayElemAt: [
                     {
@@ -263,9 +260,22 @@ exports.getRole = async (req, res) => {
       {
         $unset: "permissions",
       },
-      { $sort: { createdAt: -1 } },
-      { $skip: (start - 1) * limit },
-      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          role_name: 1,
+          status: 1,
+          rolePermissions: {
+            _id: 1,
+            permission_Details: {
+              _id: 1,
+              permission_name: 1,
+              group_name: 1,
+              status: 1,
+            },
+          },
+        },
+      },
     ]).exec();
 
     return res.status(200).json({
@@ -284,6 +294,7 @@ exports.getRole = async (req, res) => {
 exports.getRoleById = async (req, res) => {
   try {
     const { roleId } = req.query;
+
     if (!roleId)
       return res
         .status(200)
@@ -291,7 +302,7 @@ exports.getRoleById = async (req, res) => {
     const roles = await Role.aggregate([
       {
         $match: {
-          _id: roleId,
+          _id: new mongoose.Types.ObjectId(roleId),
           status: { $ne: STATUS_TYPE.Deleted },
         },
       },

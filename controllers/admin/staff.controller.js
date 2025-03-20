@@ -305,8 +305,12 @@ exports.getStaff = async (req, res) => {
 
     const staff = await Staff.aggregate([
       {
-        $match: { ...dateFilterQuery, status: { $ne: STATUS_TYPE.Deleted } },
+        $match: {
+          ...dateFilterQuery,
+          status: { $ne: STATUS_TYPE.Deleted },
+        },
       },
+
       {
         $lookup: {
           from: "roles",
@@ -326,6 +330,8 @@ exports.getStaff = async (req, res) => {
           },
         },
       },
+      { $unwind: "$role" },
+
       {
         $project: {
           first_name: 1,
@@ -333,22 +339,16 @@ exports.getStaff = async (req, res) => {
           gender: 1,
           email: 1,
           phone_number: 1,
-          dob: 1,
-          new_name: 1,
           position: 1,
           username: 1,
           role_id: 1,
-          address: 1,
-          status: 1,
-          _2fa_qr_code: 1,
-          _2fa_enable: 1,
-          _2fa_verify: 1,
           createdAt: 1,
           updatedAt: 1,
-          role: 1,
+          role: {
+            role_name:1
+          },
         },
       },
-
       { $sort: { createdAt: -1 } },
       { $skip: (start - 1) * limit },
       { $limit: limit },
