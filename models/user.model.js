@@ -37,7 +37,11 @@ const userSchema = new mongoose.Schema(
     plan: {
       planStartDate: { type: String, default: null }, //premium plan start date
       planEndDate: { type: String, default: null }, //Premium plan end date
-      premiumPlanId: { type: mongoose.Schema.Types.ObjectId, ref: "PremiumPlan", default: null },
+      premiumPlanId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "PremiumPlan",
+        default: null,
+      },
       amount: { type: Number, default: 0 },
       validity: { type: Number, default: 0 },
       validityType: { type: String, default: null },
@@ -59,7 +63,11 @@ const userSchema = new mongoose.Schema(
 
     isLive: { type: Boolean, default: false },
     channel: { type: String, default: null },
-    liveHistoryId: { type: mongoose.Schema.Types.ObjectId, ref: "LiveHistory", default: null },
+    liveHistoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "LiveHistory",
+      default: null,
+    },
 
     watchAds: {
       count: { type: Number, default: 0 },
@@ -83,6 +91,19 @@ const userSchema = new mongoose.Schema(
     totalWithdrawableAmount: { type: Number, default: 0 }, //that value save when watch video and according to earning from monetization increased
 
     totalEarningAmount: { type: Number, default: 0 }, //Earning from monetization and Earninng from converted coin (coin earned from rewards)
+
+    sessions: [
+      {
+        ipAddress: { type: String, require: true },
+        userAgent: { type: String, require: true },
+        location: {
+          country: { type: String },
+          region: { type: String },
+          city: { type: String },
+        },
+        token: { type: String, require: true },
+      },
+    ],
   },
   {
     timestamps: true,
